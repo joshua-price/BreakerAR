@@ -32,6 +32,13 @@ import UIKit
 import SceneKit
 import ARKit
 
+enum ColliderType: Int {
+  case ball = 0b0001
+  case barrier = 0b0010
+  case brick = 0b0100
+  case paddle = 0b1000
+}
+
 class GameViewController: UIViewController {
   
   @IBOutlet weak var sceneView: ARSCNView!
@@ -39,6 +46,7 @@ class GameViewController: UIViewController {
   var planeNode: SCNNode?
   var ballNode: SCNNode?
   var paddleNode: SCNNode?
+  var lastContactNode: SCNNode?
   
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -62,6 +70,8 @@ class GameViewController: UIViewController {
     
     sceneView.delegate = self
     sceneView.isPlaying = true
+    
+    sceneView.scene.physicsWorld.contactDelegate = self
   }
   
   func setupScene() {
@@ -80,6 +90,11 @@ class GameViewController: UIViewController {
     
     self.ballNode = scene.rootNode.childNode(withName: "Ball", recursively: true)
     self.paddleNode = scene.rootNode.childNode(withName: "Paddle", recursively: true)
+    
+    ballNode?.physicsBody?.contactTestBitMask =
+      ColliderType.barrier.rawValue |
+      ColliderType.brick.rawValue |
+      ColliderType.paddle.rawValue
   }
   
   func setupSounds() {
@@ -173,4 +188,69 @@ extension GameViewController: ARSCNViewDelegate {
     
   }
   
+}
+
+extension GameViewController: SCNPhysicsContactDelegate {
+  // 2
+  func physicsWorld(_ world: SCNPhysicsWorld,
+                    didBegin contact: SCNPhysicsContact) {
+    // 3
+    var contactNode: SCNNode!
+    if contact.nodeA.name == "Ball" {
+      contactNode = contact.nodeB
+    } else {
+      contactNode = contact.nodeA
+    }
+    // 4
+    if lastContactNode != nil &&
+      lastContactNode == contactNode {
+      return
+    }
+    lastContactNode = contactNode
+    
+    // 1
+    if contactNode.physicsBody?.categoryBitMask ==
+      ColliderType.barrier.rawValue {
+      if contactNode.name == "Bottom" {
+        game.lives -= 1
+        if game.lives == 0 {
+          game.saveState()
+          game.reset()
+        }
+      }
+    }
+    // 2
+    if contactNode.physicsBody?.categoryBitMask ==
+      ColliderType.brick.rawValue {
+      game.score += 1
+      contactNode.isHidden = true
+      contactNode.runAction(
+        SCNAction.waitForDurationThenRunBlock(duration: 120) {
+          (node:SCNNode!) -> Void in
+          node.isHidden = false
+      })
+    }
+    // 3
+    if contactNode.physicsBody?.categoryBitMask ==
+      ColliderType.paddle.rawValue {
+      if contactNode.name == "Left" {
+        ballNode?.physicsBody!.velocity.xzAngle -=
+          (convertToRadians(angle: 20))
+      }
+      if contactNode.name == "Right" {
+        ballNode?.physicsBody!.velocity.xzAngle +=
+          (convertToRadians(angle: 20))
+      }
+    }
+    // 4
+    ballNode?.physicsBody?.velocity.length = 0.5
+  }
+  
+  func physicsWorld(_ world: SCNPhysicsWorld, didUpdate contact: SCNPhysicsContact) {
+    
+  }
+  
+  func physicsWorld(_ world: SCNPhysicsWorld, didEnd contact: SCNPhysicsContact) {
+    
+  }
 }
