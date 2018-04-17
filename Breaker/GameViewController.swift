@@ -38,6 +38,7 @@ class GameViewController: UIViewController {
   var game = GameHelper.sharedInstance
   var planeNode: SCNNode?
   var ballNode: SCNNode?
+  var paddleNode: SCNNode?
   
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -76,7 +77,9 @@ class GameViewController: UIViewController {
     let scene = SCNScene.init(named: "Breaker.scnassets/Scenes/Game.scn")!
     
     planeNode.addChildNode(scene.rootNode)
+    
     self.ballNode = scene.rootNode.childNode(withName: "Ball", recursively: true)
+    self.paddleNode = scene.rootNode.childNode(withName: "Paddle", recursively: true)
   }
   
   func setupSounds() {

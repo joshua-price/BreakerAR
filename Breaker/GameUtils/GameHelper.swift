@@ -101,7 +101,7 @@ class GameHelper {
     hudNode = SCNNode(geometry: plane)
     hudNode.name = "HUD"
     hudNode.rotation = SCNVector4(x: 1, y: 0, z: 0, w: 3.14159265/2.0)
-    hudNode.position = SCNVector3(x:0, y: 0.1, z: -0.5)
+    hudNode.position = SCNVector3(x:0, y: 0.1, z: -0.4)
   }
   
   func updateHUD() {
